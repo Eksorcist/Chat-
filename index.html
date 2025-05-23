@@ -88,6 +88,14 @@
       word-wrap: break-word;
     }
 
+    .message-media {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 10px;
+      margin-top: 5px;
+      display: block;
+    }
+
     .message-time {
       font-size: 12px;
       color: #9ea2a8;
@@ -103,6 +111,7 @@
     .input-container {
       display: flex;
       gap: 10px;
+      align-items: center;
     }
 
     .message-input textarea {
@@ -134,9 +143,27 @@
       background-color: #1666dd;
     }
 
+    .attach-button {
+      background-color: #4eb980;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .user-count {
       font-size: 14px;
       color: #9ea2a8;
+    }
+
+    input[type="file"] {
+      display: none;
     }
   </style>
 </head>
@@ -149,16 +176,21 @@
   <div class="chat-container">
     <div class="sidebar">
       <div class="channel active">#общий</div>
-      <div class="channel">#флудилка</div>
       <div class="channel">#помощь</div>
     </div>
 
     <div class="chat-area">
       <div class="messages" id="messages">
-        <!-- Сообщения будут здесь -->
+        <div class="message">
+          <div style="color: #1d74f5">Система</div>
+          <div class="message-content">Добро пожаловать в анонимный чат! Ваше имя будет скрыто.</div>
+          <div class="message-time">Только что</div>
+        </div>
       </div>
       <div class="message-input">
         <div class="input-container">
+          <button class="attach-button" id="attachButton">+</button>
+          <input type="file" id="fileInput" accept="image/*,video/*">
           <textarea id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
           <button class="send-button" id="sendButton">→</button>
         </div>
@@ -178,6 +210,12 @@
       orderBy,
       getCountFromServer
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { 
+      getStorage,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
     // Конфигурация Firebase
     const firebaseConfig = {
@@ -192,49 +230,77 @@
     // Инициализация Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
     const messagesRef = collection(db, "messages");
 
     // Элементы интерфейса
     const messagesContainer = document.getElementById("messages");
     const messageInput = document.getElementById("messageInput");
     const sendButton = document.getElementById("sendButton");
+    const attachButton = document.getElementById("attachButton");
+    const fileInput = document.getElementById("fileInput");
     const onlineCountSpan = document.getElementById("onlineCount");
 
-    // Генератор случайных имен пользователей
-    const generateRandomName = () => {
-      const adjectives = ["Пиздливый", "Недоразвитый", "Конченый", "Придурошный", "Убогий", "Припизднутый"];
-      const nouns = ["Уебан", "Лох", "Ублюдок", "Пидераст", "Конч", "Богдан"];
-      const randomNum = Math.floor(Math.random() * 1000);
-      return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${
-        nouns[Math.floor(Math.random() * nouns.length)]
-      }${randomNum}`;
+    // Генератор случайных ID пользователей
+    const generateUserId = () => {
+      return `Пользователь ${Math.floor(Math.random() * 90000) + 10000}`;
     };
 
-    // Сохраняем имя пользователя в сессии
-    const username = generateRandomName();
-    let isTyping = false;
+    // Сохраняем ID пользователя в сессии
+    const userId = generateUserId();
+    let mediaFile = null;
+
+    // Загрузка файла в Storage
+    const uploadFile = async (file) => {
+      try {
+        const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        return await getDownloadURL(storageRef);
+      } catch (error) {
+        console.error("Ошибка загрузки файла:", error);
+        return null;
+      }
+    };
 
     // Отправка сообщения
     const sendMessage = async () => {
       const messageText = messageInput.value.trim();
-      if (!messageText) return;
+      if (!messageText && !mediaFile) return;
 
       try {
+        let mediaUrl = null;
+        if (mediaFile) {
+          mediaUrl = await uploadFile(mediaFile);
+        }
+
         await addDoc(messagesRef, {
           text: messageText,
-          username: username,
+          userId: userId,
           timestamp: serverTimestamp(),
-          color: `hsl(${Math.random() * 360}, 70%, 60%)`
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+          mediaUrl: mediaUrl,
+          mediaType: mediaFile?.type
         });
+
         messageInput.value = "";
         messageInput.style.height = "44px";
+        mediaFile = null;
       } catch (error) {
         console.error("Ошибка отправки сообщения:", error);
       }
     };
 
+    // Обработчик выбора файла
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        mediaFile = e.target.files[0];
+        messageInput.placeholder = `Файл выбран: ${mediaFile.name}`;
+      }
+    });
+
     // Отправка по кнопке
     sendButton.addEventListener("click", sendMessage);
+    attachButton.addEventListener("click", () => fileInput.click());
 
     // Отправка по Enter
     messageInput.addEventListener("keydown", (e) => {
@@ -250,6 +316,18 @@
       messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
     });
 
+    // Отображение медиа
+    const renderMedia = (message) => {
+      if (!message.mediaUrl) return '';
+      
+      if (message.mediaType.startsWith('image/')) {
+        return `<img src="${message.mediaUrl}" class="message-media" alt="Изображение">`;
+      } else if (message.mediaType.startsWith('video/')) {
+        return `<video controls class="message-media"><source src="${message.mediaUrl}" type="${message.mediaType}"></video>`;
+      }
+      return '';
+    };
+
     // Отображение сообщений
     const displayMessage = (doc) => {
       const message = doc.data();
@@ -257,8 +335,9 @@
       messageElement.className = "message";
       
       messageElement.innerHTML = `
-        <div style="color: ${message.color || '#1d74f5'}">${message.username}</div>
-        <div class="message-content">${message.text}</div>
+        <div style="color: ${message.color || '#1d74f5'}">${message.userId}</div>
+        ${message.text ? `<div class="message-content">${message.text}</div>` : ''}
+        ${message.mediaUrl ? renderMedia(message) : ''}
         <div class="message-time">${new Date(message.timestamp?.toDate() || Date.now()).toLocaleTimeString()}</div>
       `;
       
@@ -266,17 +345,25 @@
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     };
 
-    // Подписка на новые сообщения
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
-    onSnapshot(q, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          displayMessage(change.doc);
-        }
+    // Загрузка всех сообщений при старте
+    const loadMessages = () => {
+      const q = query(messagesRef, orderBy("timestamp", "asc"));
+      onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = `
+          <div class="message">
+            <div style="color: #1d74f5">Система</div>
+            <div class="message-content">Добро пожаловать в анонимный чат! Ваше имя будет скрыто.</div>
+            <div class="message-time">Только что</div>
+          </div>
+        `;
+        
+        snapshot.forEach((doc) => {
+          displayMessage(doc);
+        });
       });
-    });
+    };
 
-    // Подсчет онлайн пользователей (упрощенный вариант)
+    // Подсчет онлайн пользователей
     const updateOnlineCount = async () => {
       try {
         const coll = collection(db, "presence");
@@ -287,7 +374,8 @@
       }
     };
 
-    // Обновляем счетчик каждые 10 секунд
+    // Инициализация
+    loadMessages();
     setInterval(updateOnlineCount, 10000);
     updateOnlineCount();
   </script>
