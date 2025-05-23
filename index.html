@@ -1,247 +1,256 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Редактор массивов данных</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    body {
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #333;
-      text-align: center;
-    }
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    button, select, input {
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: 1px solid #ddd;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    button.danger {
-      background-color: #f44336;
-    }
-    button.danger:hover {
-      background-color: #d32f2f;
-    }
-    .array-editor {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 15px;
-      background: #fafafa;
-    }
-    .item {
-      display: flex;
-      align-items: center;
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-      gap: 10px;
-    }
-    .item:last-child {
-      border-bottom: none;
-    }
-    .item input {
-      flex: 1;
-      padding: 6px;
-    }
-    .json-viewer {
-      margin-top: 20px;
-      padding: 15px;
-      background: #333;
-      color: #f8f8f8;
-      border-radius: 4px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Анализ депозитов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        .input-section {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            width: 200px;
+        }
+        input, select {
+            padding: 5px;
+            width: 100px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Редактор массивов данных</h1>
+    <h1>Анализ депозитов</h1>
     
-    <div class="controls">
-      <select id="dataType">
-        <option value="string">Текст</option>
-        <option value="number">Число</option>
-        <option value="boolean">Логическое (true/false)</option>
-        <option value="object">Объект (JSON)</option>
-      </select>
-      <input type="text" id="newItem" placeholder="Введите значение">
-      <button id="addBtn">Добавить</button>
-      <button id="clearBtn" class="danger">Очистить массив</button>
-      <button id="exportBtn">Экспорт JSON</button>
-      <button id="importBtn">Импорт JSON</button>
-      <input type="file" id="fileInput" accept=".json" style="display: none;">
+    <div class="input-section">
+        <h2>Параметры расчета</h2>
+        <div class="input-group">
+            <label>Процент для расчета (%):</label>
+            <input type="number" id="percent" value="10">
+        </div>
+        <div class="input-group">
+            <label>Множитель для этого месяца:</label>
+            <input type="number" id="currentMonthMultiplier" value="1.5" step="0.1">
+        </div>
+        <div class="input-group">
+            <label>Множитель для прошлых месяцев:</label>
+            <input type="number" id="previousMonthsMultiplier" value="1.2" step="0.1">
+        </div>
+        <button id="calculateBtn">Рассчитать</button>
     </div>
-    
-    <div class="array-editor" id="arrayEditor">
-      <!-- Элементы массива будут здесь -->
-    </div>
-    
-    <div class="json-viewer" id="jsonViewer">
-      Массив пуст
-    </div>
-  </div>
 
-  <script>
-    let dataArray = [];
-    const arrayEditor = document.getElementById('arrayEditor');
-    const jsonViewer = document.getElementById('jsonViewer');
-    const newItemInput = document.getElementById('newItem');
-    const dataTypeSelect = document.getElementById('dataType');
-    const fileInput = document.getElementById('fileInput');
+    <h2>Исходные данные</h2>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Talk Date</th>
+                <th>Deposit Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Данные будут загружаться здесь -->
+        </tbody>
+    </table>
 
-    // Добавление элемента
-    document.getElementById('addBtn').addEventListener('click', () => {
-      const value = newItemInput.value.trim();
-      if (!value) return;
-      
-      try {
-        let parsedValue;
-        switch(dataTypeSelect.value) {
-          case 'number':
-            parsedValue = Number(value);
-            if (isNaN(parsedValue)) throw new Error('Неверное число');
-            break;
-          case 'boolean':
-            parsedValue = value.toLowerCase() === 'true';
-            break;
-          case 'object':
-            parsedValue = JSON.parse(value);
-            break;
-          default:
-            parsedValue = value;
+    <h2>Результаты анализа</h2>
+    <div id="resultsContainer"></div>
+
+    <div class="results">
+        <h3>Итоговый расчет</h3>
+        <p>Общая сумма после умножения: <span id="totalAfterMultiply">0</span></p>
+        <p>Итоговая сумма после применения процента: <span id="finalResult">0</span></p>
+    </div>
+
+    <script>
+        // Пример данных (можно заменить на загрузку из файла)
+        const sampleData = [
+            { id: 1, firstTalkDate: '2023-10-15', depositAmount: 1500 },
+            { id: 2, firstTalkDate: '2023-11-20', depositAmount: 3000 },
+            { id: 3, firstTalkDate: '2023-09-05', depositAmount: 8000 },
+            { id: 4, firstTalkDate: '2023-11-01', depositAmount: 12000 },
+            { id: 5, firstTalkDate: '2023-08-12', depositAmount: 25000 },
+            { id: 6, firstTalkDate: '2023-11-10', depositAmount: 1800 },
+            { id: 7, firstTalkDate: '2023-07-22', depositAmount: 15000 },
+            { id: 8, firstTalkDate: '2023-11-05', depositAmount: 5000 },
+            { id: 9, firstTalkDate: '2023-06-18', depositAmount: 22000 },
+            { id: 10, firstTalkDate: '2023-11-25', depositAmount: 300 }
+        ];
+
+        // Заполняем таблицу данными
+        const tableBody = document.querySelector('#dataTable tbody');
+        sampleData.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td>${item.firstTalkDate}</td>
+                <td>${item.depositAmount}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Функция анализа данных
+        function analyzeData() {
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            
+            const percent = parseFloat(document.getElementById('percent').value) / 100;
+            const currentMonthMultiplier = parseFloat(document.getElementById('currentMonthMultiplier').value);
+            const previousMonthsMultiplier = parseFloat(document.getElementById('previousMonthsMultiplier').value);
+            
+            // Группировка данных
+            const currentMonthData = [];
+            const previousMonthsData = [];
+            
+            sampleData.forEach(item => {
+                const talkDate = new Date(item.firstTalkDate);
+                if (talkDate.getMonth() === currentMonth && talkDate.getFullYear() === currentYear) {
+                    currentMonthData.push(item);
+                } else {
+                    previousMonthsData.push(item);
+                }
+            });
+            
+            // Функция для группировки по диапазонам
+            function groupByRange(data) {
+                const ranges = {
+                    '500-2499': { count: 0, items: [] },
+                    '2500-9999': { count: 0, items: [] },
+                    '10000-19999': { count: 0, items: [] },
+                    '20000+': { count: 0, items: [] }
+                };
+                
+                data.forEach(item => {
+                    const amount = item.depositAmount;
+                    if (amount >= 500 && amount <= 2499) {
+                        ranges['500-2499'].count++;
+                        ranges['500-2499'].items.push(item);
+                    } else if (amount >= 2500 && amount <= 9999) {
+                        ranges['2500-9999'].count++;
+                        ranges['2500-9999'].items.push(item);
+                    } else if (amount >= 10000 && amount <= 19999) {
+                        ranges['10000-19999'].count++;
+                        ranges['10000-19999'].items.push(item);
+                    } else if (amount >= 20000) {
+                        ranges['20000+'].count++;
+                        ranges['20000+'].items.push(item);
+                    }
+                });
+                
+                return ranges;
+            }
+            
+            const currentMonthRanges = groupByRange(currentMonthData);
+            const previousMonthsRanges = groupByRange(previousMonthsData);
+            
+            // Отображение результатов
+            let resultsHTML = `
+                <h3>Текущий месяц</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Диапазон депозита</th>
+                            <th>Количество</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(currentMonthRanges).map(([range, data]) => `
+                            <tr>
+                                <td>${range}</td>
+                                <td>${data.count}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                
+                <h3>Предыдущие месяцы</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Диапазон депозита</th>
+                            <th>Количество</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(previousMonthsRanges).map(([range, data]) => `
+                            <tr>
+                                <td>${range}</td>
+                                <td>${data.count}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('resultsContainer').innerHTML = resultsHTML;
+            
+            // Расчет итоговых значений
+            let currentMonthTotal = 0;
+            Object.values(currentMonthRanges).forEach(range => {
+                currentMonthTotal += range.count;
+            });
+            
+            let previousMonthsTotal = 0;
+            Object.values(previousMonthsRanges).forEach(range => {
+                previousMonthsTotal += range.count;
+            });
+            
+            const totalAfterMultiply = 
+                (currentMonthTotal * currentMonthMultiplier) + 
+                (previousMonthsTotal * previousMonthsMultiplier);
+                
+            const finalResult = totalAfterMultiply * percent;
+            
+            document.getElementById('totalAfterMultiply').textContent = totalAfterMultiply.toFixed(2);
+            document.getElementById('finalResult').textContent = finalResult.toFixed(2);
         }
         
-        dataArray.push(parsedValue);
-        newItemInput.value = '';
-        renderArray();
-      } catch (e) {
-        alert(`Ошибка: ${e.message}`);
-      }
-    });
-
-    // Очистка массива
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      dataArray = [];
-      renderArray();
-    });
-
-    // Экспорт JSON
-    document.getElementById('exportBtn').addEventListener('click', () => {
-      const dataStr = JSON.stringify(dataArray, null, 2);
-      const blob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'data-array.json';
-      a.click();
-      
-      URL.revokeObjectURL(url);
-    });
-
-    // Импорт JSON
-    document.getElementById('importBtn').addEventListener('click', () => {
-      fileInput.click();
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          dataArray = JSON.parse(event.target.result);
-          renderArray();
-        } catch (e) {
-          alert('Ошибка при чтении файла: ' + e.message);
-        }
-      };
-      reader.readAsText(file);
-    });
-
-    // Рендер массива
-    function renderArray() {
-      arrayEditor.innerHTML = '';
-      
-      if (dataArray.length === 0) {
-        arrayEditor.innerHTML = '<div class="item">Массив пуст</div>';
-        jsonViewer.textContent = 'Массив пуст';
-        return;
-      }
-      
-      dataArray.forEach((item, index) => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'item';
+        // Обработчик кнопки расчета
+        document.getElementById('calculateBtn').addEventListener('click', analyzeData);
         
-        const itemInput = document.createElement('input');
-        itemInput.value = typeof item === 'object' ? JSON.stringify(item) : item;
-        itemInput.addEventListener('change', (e) => {
-          try {
-            dataArray[index] = typeof item === 'object' ? JSON.parse(e.target.value) : e.target.value;
-            updateJsonView();
-          } catch (e) {
-            alert('Ошибка при изменении значения: ' + e.message);
-            e.target.value = item;
-          }
-        });
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '×';
-        deleteBtn.className = 'danger';
-        deleteBtn.addEventListener('click', () => {
-          dataArray.splice(index, 1);
-          renderArray();
-        });
-        
-        itemDiv.appendChild(itemInput);
-        itemDiv.appendChild(deleteBtn);
-        arrayEditor.appendChild(itemDiv);
-      });
-      
-      updateJsonView();
-    }
-    
-    // Обновление JSON просмотра
-    function updateJsonView() {
-      jsonViewer.textContent = JSON.stringify(dataArray, null, 2);
-    }
-
-    // Инициализация
-    renderArray();
-  </script>
+        // Первоначальный расчет
+        analyzeData();
+    </script>
 </body>
 </html>
