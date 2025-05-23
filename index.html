@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bogdanio Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link id="favicon" rel="icon" href="favicon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h2>Чаты</h2>
+      <ul id="rooms">
+        <li class="active"># Общий</li>
+      </ul>
+    </aside>
+
+    <main class="chat">
+      <header>
+        <h1># Общий</h1>
+        <button id="themeToggle">🌙</button>
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="msgForm">
+        <textarea id="msgInput" placeholder="Сообщение..."></textarea>
+        <input type="file" id="fileInput" accept="image/*,video/*" />
+        <button type="submit">➤</button>
+      </form>
+      <div class="emoji-panel" id="emojiPanel">🙂 😂 ❤️ 🤔 😎</div>
+    </main>
+  </div>
+
+  <audio id="notifySound" src="notify.mp3" preload="auto"></audio>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
