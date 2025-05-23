@@ -1,200 +1,247 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Анонимный Чат</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Редактор массивов данных</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
     body {
-      background: #1f2329;
-      color: white;
+      background-color: #f5f5f5;
       margin: 0;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+      padding: 20px;
     }
-
-    header {
-      background: #2f343d;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #messages {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-    }
-
-    .message {
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #393f49;
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
       border-radius: 8px;
-      max-width: 80%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
-    .message-time {
-      font-size: 12px;
-      color: #aaa;
-      margin-top: 5px;
+    h1 {
+      color: #333;
+      text-align: center;
     }
-
-    .message-media {
-      max-width: 100%;
-      max-height: 300px;
-      margin-top: 5px;
-      border-radius: 6px;
-    }
-
-    footer {
-      background: #2f343d;
-      padding: 10px;
+    .controls {
       display: flex;
       gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
-
-    textarea {
-      flex: 1;
-      resize: none;
-      border: none;
-      border-radius: 6px;
-      padding: 10px;
-      background: #393f49;
-      color: white;
+    button, select, input {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
     }
-
     button {
-      background: #1d74f5;
-      border: none;
+      background-color: #4CAF50;
       color: white;
-      padding: 10px;
-      border-radius: 6px;
+      border: none;
       cursor: pointer;
+      transition: background 0.3s;
     }
-
-    input[type="file"] {
-      display: none;
+    button:hover {
+      background-color: #45a049;
     }
-
-    label[for="fileInput"] {
-      background: #4eb980;
-      border-radius: 6px;
-      padding: 10px;
-      cursor: pointer;
+    button.danger {
+      background-color: #f44336;
+    }
+    button.danger:hover {
+      background-color: #d32f2f;
+    }
+    .array-editor {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      background: #fafafa;
+    }
+    .item {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      gap: 10px;
+    }
+    .item:last-child {
+      border-bottom: none;
+    }
+    .item input {
+      flex: 1;
+      padding: 6px;
+    }
+    .json-viewer {
+      margin-top: 20px;
+      padding: 15px;
+      background: #333;
+      color: #f8f8f8;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Анонимный Чат</h1>
-    <div>Онлайн: <span id="onlineCount">0</span></div>
-  </header>
+  <div class="container">
+    <h1>Редактор массивов данных</h1>
+    
+    <div class="controls">
+      <select id="dataType">
+        <option value="string">Текст</option>
+        <option value="number">Число</option>
+        <option value="boolean">Логическое (true/false)</option>
+        <option value="object">Объект (JSON)</option>
+      </select>
+      <input type="text" id="newItem" placeholder="Введите значение">
+      <button id="addBtn">Добавить</button>
+      <button id="clearBtn" class="danger">Очистить массив</button>
+      <button id="exportBtn">Экспорт JSON</button>
+      <button id="importBtn">Импорт JSON</button>
+      <input type="file" id="fileInput" accept=".json" style="display: none;">
+    </div>
+    
+    <div class="array-editor" id="arrayEditor">
+      <!-- Элементы массива будут здесь -->
+    </div>
+    
+    <div class="json-viewer" id="jsonViewer">
+      Массив пуст
+    </div>
+  </div>
 
-  <main id="messages"></main>
+  <script>
+    let dataArray = [];
+    const arrayEditor = document.getElementById('arrayEditor');
+    const jsonViewer = document.getElementById('jsonViewer');
+    const newItemInput = document.getElementById('newItem');
+    const dataTypeSelect = document.getElementById('dataType');
+    const fileInput = document.getElementById('fileInput');
 
-  <footer>
-    <label for="fileInput">📎</label>
-    <input type="file" id="fileInput" accept="image/*,video/*" />
-    <textarea id="messageInput" rows="1" placeholder="Сообщение..."></textarea>
-    <button id="sendBtn">➤</button>
-  </footer>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, serverTimestamp, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
-    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEHxU460R8ruhV6RdzOoRcFUD0oQMtLo0",
-      authDomain: "bogdanio-9eae8.firebaseapp.com",
-      databaseURL: "https://bogdanio-9eae8-default-rtdb.firebaseio.com",
-      projectId: "bogdanio-9eae8",
-      storageBucket: "bogdanio-9eae8.appspot.com",
-      messagingSenderId: "840884163092",
-      appId: "1:840884163092:web:20b208ee19f506b25e4d01"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const storage = getStorage(app);
-
-    const messagesRef = ref(db, "messages");
-    const onlineRef = ref(db, "online");
-
-    const messageInput = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const messages = document.getElementById("messages");
-    const fileInput = document.getElementById("fileInput");
-    const onlineCount = document.getElementById("onlineCount");
-
-    const userId = "user_" + Math.random().toString(36).substring(2, 8);
-    const presenceRef = ref(db, "online/" + userId);
-    set(presenceRef, true);
-    window.addEventListener("beforeunload", () => remove(presenceRef));
-
-    onValue(onlineRef, snap => {
-      onlineCount.textContent = snap.exists() ? Object.keys(snap.val()).length : 0;
-    });
-
-    onChildAdded(messagesRef, snap => {
-      const data = snap.val();
-      const div = document.createElement("div");
-      div.className = "message";
-      if (data.text) div.innerHTML += `<div>${data.text}</div>`;
-      if (data.mediaUrl && data.mediaType) {
-        if (data.mediaType.startsWith("image")) {
-          div.innerHTML += `<img src="${data.mediaUrl}" class="message-media" />`;
-        } else if (data.mediaType.startsWith("video")) {
-          div.innerHTML += `<video src="${data.mediaUrl}" class="message-media" controls></video>`;
+    // Добавление элемента
+    document.getElementById('addBtn').addEventListener('click', () => {
+      const value = newItemInput.value.trim();
+      if (!value) return;
+      
+      try {
+        let parsedValue;
+        switch(dataTypeSelect.value) {
+          case 'number':
+            parsedValue = Number(value);
+            if (isNaN(parsedValue)) throw new Error('Неверное число');
+            break;
+          case 'boolean':
+            parsedValue = value.toLowerCase() === 'true';
+            break;
+          case 'object':
+            parsedValue = JSON.parse(value);
+            break;
+          default:
+            parsedValue = value;
         }
+        
+        dataArray.push(parsedValue);
+        newItemInput.value = '';
+        renderArray();
+      } catch (e) {
+        alert(`Ошибка: ${e.message}`);
       }
-      div.innerHTML += `<div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>`;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
     });
 
-    async function sendMessage(text = "", file = null) {
-      let mediaUrl = "", mediaType = "";
+    // Очистка массива
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      dataArray = [];
+      renderArray();
+    });
 
-      if (file) {
-        const fileRef = sRef(storage, `media/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        mediaUrl = await getDownloadURL(fileRef);
-        mediaType = file.type;
+    // Экспорт JSON
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const dataStr = JSON.stringify(dataArray, null, 2);
+      const blob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data-array.json';
+      a.click();
+      
+      URL.revokeObjectURL(url);
+    });
+
+    // Импорт JSON
+    document.getElementById('importBtn').addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          dataArray = JSON.parse(event.target.result);
+          renderArray();
+        } catch (e) {
+          alert('Ошибка при чтении файла: ' + e.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Рендер массива
+    function renderArray() {
+      arrayEditor.innerHTML = '';
+      
+      if (dataArray.length === 0) {
+        arrayEditor.innerHTML = '<div class="item">Массив пуст</div>';
+        jsonViewer.textContent = 'Массив пуст';
+        return;
       }
-
-      await push(messagesRef, {
-        user: userId,
-        text,
-        mediaUrl,
-        mediaType,
-        timestamp: Date.now()
+      
+      dataArray.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'item';
+        
+        const itemInput = document.createElement('input');
+        itemInput.value = typeof item === 'object' ? JSON.stringify(item) : item;
+        itemInput.addEventListener('change', (e) => {
+          try {
+            dataArray[index] = typeof item === 'object' ? JSON.parse(e.target.value) : e.target.value;
+            updateJsonView();
+          } catch (e) {
+            alert('Ошибка при изменении значения: ' + e.message);
+            e.target.value = item;
+          }
+        });
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.className = 'danger';
+        deleteBtn.addEventListener('click', () => {
+          dataArray.splice(index, 1);
+          renderArray();
+        });
+        
+        itemDiv.appendChild(itemInput);
+        itemDiv.appendChild(deleteBtn);
+        arrayEditor.appendChild(itemDiv);
       });
-
-      messageInput.value = "";
+      
+      updateJsonView();
+    }
+    
+    // Обновление JSON просмотра
+    function updateJsonView() {
+      jsonViewer.textContent = JSON.stringify(dataArray, null, 2);
     }
 
-    sendBtn.onclick = () => {
-      const text = messageInput.value.trim();
-      if (text) sendMessage(text);
-    };
-
-    fileInput.onchange = () => {
-      const file = fileInput.files[0];
-      if (file) sendMessage("", file);
-    };
-
-    messageInput.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        const text = messageInput.value.trim();
-        if (text) sendMessage(text);
-      }
-    });
+    // Инициализация
+    renderArray();
   </script>
 </body>
 </html>
