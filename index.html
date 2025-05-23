@@ -11,7 +11,6 @@
       padding: 0;
       font-family: 'Segoe UI', sans-serif;
     }
-
     body {
       background-color: #1f2329;
       color: #e0e0e0;
@@ -19,7 +18,6 @@
       display: flex;
       flex-direction: column;
     }
-
     header {
       background-color: #2f343d;
       padding: 15px 20px;
@@ -28,18 +26,15 @@
       justify-content: space-between;
       align-items: center;
     }
-
     h1 {
       font-size: 20px;
       font-weight: 600;
     }
-
     .chat-container {
       flex: 1;
       display: flex;
       overflow: hidden;
     }
-
     .sidebar {
       width: 250px;
       background-color: #2f343d;
@@ -47,39 +42,32 @@
       padding: 15px;
       overflow-y: auto;
     }
-
     .channel {
       padding: 10px;
       margin-bottom: 5px;
       border-radius: 4px;
       cursor: pointer;
     }
-
     .channel.active {
       background-color: #393f49;
     }
-
     .channel:hover {
       background-color: #393f49;
     }
-
     .chat-area {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
-
     .messages {
       flex: 1;
       padding: 20px;
       overflow-y: auto;
     }
-
     .message {
       margin-bottom: 15px;
       max-width: 70%;
     }
-
     .message-content {
       padding: 10px 15px;
       border-radius: 18px;
@@ -87,7 +75,6 @@
       display: inline-block;
       word-wrap: break-word;
     }
-
     .message-media {
       max-width: 100%;
       max-height: 300px;
@@ -95,25 +82,21 @@
       margin-top: 5px;
       display: block;
     }
-
     .message-time {
       font-size: 12px;
       color: #9ea2a8;
       margin-top: 5px;
     }
-
     .message-input {
       padding: 15px;
       background-color: #2f343d;
       border-top: 1px solid #393f49;
     }
-
     .input-container {
       display: flex;
       gap: 10px;
       align-items: center;
     }
-
     .message-input textarea {
       flex: 1;
       background-color: #393f49;
@@ -125,7 +108,6 @@
       height: 44px;
       max-height: 120px;
     }
-
     .send-button {
       background-color: #1d74f5;
       color: white;
@@ -138,11 +120,9 @@
       justify-content: center;
       cursor: pointer;
     }
-
     .send-button:hover {
       background-color: #1666dd;
     }
-
     .attach-button {
       background-color: #4eb980;
       border: none;
@@ -156,12 +136,10 @@
       align-items: center;
       justify-content: center;
     }
-
     .user-count {
       font-size: 14px;
       color: #9ea2a8;
     }
-
     input[type="file"] {
       display: none;
     }
@@ -178,7 +156,6 @@
       <div class="channel active">#общий</div>
       <div class="channel">#помощь</div>
     </div>
-
     <div class="chat-area">
       <div class="messages" id="messages">
         <div class="message">
@@ -197,187 +174,127 @@
       </div>
     </div>
   </div>
-
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { 
-      getFirestore, 
-      collection, 
-      addDoc, 
-      serverTimestamp, 
-      onSnapshot,
-      query,
-      orderBy,
-      getCountFromServer
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { 
-      getStorage,
-      ref,
-      uploadBytes,
-      getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+  // Firebase инициализация
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded, serverTimestamp, set } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+  import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
-    // Конфигурация Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEHxU460R8ruhV6RdzOoRcFUD0oQMtLo0",
-      authDomain: "bogdanio-9eae8.firebaseapp.com",
-      projectId: "bogdanio-9eae8",
-      storageBucket: "bogdanio-9eae8.appspot.com",
-      messagingSenderId: "840884163092",
-      appId: "1:840884163092:web:20b208ee19f506b25e4d01"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyC...ТВОЙ_КЛЮЧ",
+    authDomain: "bogdanio-9eae8.firebaseapp.com",
+    databaseURL: "https://bogdanio-9eae8-default-rtdb.firebaseio.com",
+    projectId: "bogdanio-9eae8",
+    storageBucket: "bogdanio-9eae8.appspot.com",
+    messagingSenderId: "xxx",
+    appId: "xxx"
+  };
 
-    // Инициализация Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const messagesRef = collection(db, "messages");
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const storage = getStorage(app);
 
-    // Элементы интерфейса
-    const messagesContainer = document.getElementById("messages");
-    const messageInput = document.getElementById("messageInput");
-    const sendButton = document.getElementById("sendButton");
-    const attachButton = document.getElementById("attachButton");
-    const fileInput = document.getElementById("fileInput");
-    const onlineCountSpan = document.getElementById("onlineCount");
+  const messagesRef = ref(db, "messages");
 
-    // Генератор случайных ID пользователей
-    const generateUserId = () => {
-      return `Пользователь ${Math.floor(Math.random() * 90000) + 10000}`;
-    };
+  const messageInput = document.getElementById("messageInput");
+  const sendButton = document.getElementById("sendButton");
+  const messagesContainer = document.getElementById("messages");
+  const attachButton = document.getElementById("attachButton");
+  const fileInput = document.getElementById("fileInput");
+  const onlineCountEl = document.getElementById("onlineCount");
 
-    // Сохраняем ID пользователя в сессии
-    const userId = generateUserId();
-    let mediaFile = null;
+  function addMessageToUI(msg) {
+    const div = document.createElement("div");
+    div.className = "message";
 
-    // Загрузка файла в Storage
-    const uploadFile = async (file) => {
-      try {
-        const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        return await getDownloadURL(storageRef);
-      } catch (error) {
-        console.error("Ошибка загрузки файла:", error);
-        return null;
-      }
-    };
+    const content = document.createElement("div");
+    content.className = "message-content";
+    content.textContent = msg.text || "";
 
-    // Отправка сообщения
-    const sendMessage = async () => {
-      const messageText = messageInput.value.trim();
-      if (!messageText && !mediaFile) return;
+    div.appendChild(content);
 
-      try {
-        let mediaUrl = null;
-        if (mediaFile) {
-          mediaUrl = await uploadFile(mediaFile);
-        }
+    if (msg.mediaUrl) {
+      const media = document.createElement(
+        msg.mediaType.startsWith("image/") ? "img" : "video"
+      );
+      media.src = msg.mediaUrl;
+      media.className = "message-media";
+      if (msg.mediaType.startsWith("video/")) media.controls = true;
+      div.appendChild(media);
+    }
 
-        await addDoc(messagesRef, {
-          text: messageText,
-          userId: userId,
-          timestamp: serverTimestamp(),
-          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-          mediaUrl: mediaUrl,
-          mediaType: mediaFile?.type
-        });
+    const time = document.createElement("div");
+    time.className = "message-time";
+    time.textContent = new Date(msg.timestamp).toLocaleTimeString();
+    div.appendChild(time);
 
-        messageInput.value = "";
-        messageInput.style.height = "44px";
-        mediaFile = null;
-      } catch (error) {
-        console.error("Ошибка отправки сообщения:", error);
-      }
-    };
+    messagesContainer.appendChild(div);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 
-    // Обработчик выбора файла
-    fileInput.addEventListener("change", (e) => {
-      if (e.target.files.length > 0) {
-        mediaFile = e.target.files[0];
-        messageInput.placeholder = `Файл выбран: ${mediaFile.name}`;
-      }
+  onChildAdded(messagesRef, (data) => {
+    addMessageToUI(data.val());
+  });
+
+  async function sendMessage(text = "", file = null) {
+    let mediaUrl = "";
+    let mediaType = "";
+
+    if (file) {
+      const fileRef = sRef(storage, "media/" + Date.now() + "_" + file.name);
+      await uploadBytes(fileRef, file);
+      mediaUrl = await getDownloadURL(fileRef);
+      mediaType = file.type;
+    }
+
+    await push(messagesRef, {
+      text,
+      mediaUrl,
+      mediaType,
+      timestamp: Date.now()
     });
 
-    // Отправка по кнопке
-    sendButton.addEventListener("click", sendMessage);
-    attachButton.addEventListener("click", () => fileInput.click());
+    messageInput.value = "";
+  }
 
-    // Отправка по Enter
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+  sendButton.onclick = () => {
+    if (messageInput.value.trim()) {
+      sendMessage(messageInput.value.trim());
+    }
+  };
+
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (messageInput.value.trim()) {
+        sendMessage(messageInput.value.trim());
       }
-    });
+    }
+  });
 
-    // Авто-высота textarea
-    messageInput.addEventListener("input", () => {
-      messageInput.style.height = "auto";
-      messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
-    });
+  attachButton.onclick = () => {
+    fileInput.click();
+  };
 
-    // Отображение медиа
-    const renderMedia = (message) => {
-      if (!message.mediaUrl) return '';
-      
-      if (message.mediaType.startsWith('image/')) {
-        return `<img src="${message.mediaUrl}" class="message-media" alt="Изображение">`;
-      } else if (message.mediaType.startsWith('video/')) {
-        return `<video controls class="message-media"><source src="${message.mediaUrl}" type="${message.mediaType}"></video>`;
-      }
-      return '';
-    };
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (file) {
+      sendMessage("", file);
+    }
+  };
 
-    // Отображение сообщений
-    const displayMessage = (doc) => {
-      const message = doc.data();
-      const messageElement = document.createElement("div");
-      messageElement.className = "message";
-      
-      messageElement.innerHTML = `
-        <div style="color: ${message.color || '#1d74f5'}">${message.userId}</div>
-        ${message.text ? `<div class="message-content">${message.text}</div>` : ''}
-        ${message.mediaUrl ? renderMedia(message) : ''}
-        <div class="message-time">${new Date(message.timestamp?.toDate() || Date.now()).toLocaleTimeString()}</div>
-      `;
-      
-      messagesContainer.appendChild(messageElement);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    };
+  // Онлайн статус
+  const userId = "user_" + Math.random().toString(36).substring(2, 10);
+  const userRef = ref(db, "online/" + userId);
+  set(userRef, true);
+  window.addEventListener("beforeunload", () => set(userRef, null));
 
-    // Загрузка всех сообщений при старте
-    const loadMessages = () => {
-      const q = query(messagesRef, orderBy("timestamp", "asc"));
-      onSnapshot(q, (snapshot) => {
-        messagesContainer.innerHTML = `
-          <div class="message">
-            <div style="color: #1d74f5">Система</div>
-            <div class="message-content">Добро пожаловать в анонимный чат!</div>
-            <div class="message-time">Только что</div>
-          </div>
-        `;
-        
-        snapshot.forEach((doc) => {
-          displayMessage(doc);
-        });
-      });
-    };
-
-    // Подсчет онлайн пользователей
-    const updateOnlineCount = async () => {
-      try {
-        const coll = collection(db, "presence");
-        const snapshot = await getCountFromServer(coll);
-        onlineCountSpan.textContent = snapshot.data().count;
-      } catch (error) {
-        console.error("Ошибка подсчета пользователей:", error);
-      }
-    };
-
-    // Инициализация
-    loadMessages();
-    setInterval(updateOnlineCount, 10000);
-    updateOnlineCount();
-  </script>
+  import { onValue, ref as r } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+  const onlineRef = r(db, "online");
+  onValue(onlineRef, (snapshot) => {
+    const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+    onlineCountEl.textContent = count;
+  });
+</script>
 </body>
 </html>
