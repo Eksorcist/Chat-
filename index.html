@@ -1,300 +1,200 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Анонимный Чат</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-    }
     body {
-      background-color: #1f2329;
-      color: #e0e0e0;
-      height: 100vh;
+      background: #1f2329;
+      color: white;
+      margin: 0;
+      font-family: sans-serif;
       display: flex;
       flex-direction: column;
+      height: 100vh;
     }
+
     header {
-      background-color: #2f343d;
-      padding: 15px 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      background: #2f343d;
+      padding: 10px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    h1 {
-      font-size: 20px;
-      font-weight: 600;
-    }
-    .chat-container {
+
+    #messages {
       flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
-    .sidebar {
-      width: 250px;
-      background-color: #2f343d;
-      border-right: 1px solid #393f49;
-      padding: 15px;
-      overflow-y: auto;
-    }
-    .channel {
       padding: 10px;
-      margin-bottom: 5px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .channel.active {
-      background-color: #393f49;
-    }
-    .channel:hover {
-      background-color: #393f49;
-    }
-    .chat-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .messages {
-      flex: 1;
-      padding: 20px;
       overflow-y: auto;
     }
+
     .message {
-      margin-bottom: 15px;
-      max-width: 70%;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #393f49;
+      border-radius: 8px;
+      max-width: 80%;
     }
-    .message-content {
-      padding: 10px 15px;
-      border-radius: 18px;
-      background-color: #393f49;
-      display: inline-block;
-      word-wrap: break-word;
+
+    .message-time {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 5px;
     }
+
     .message-media {
       max-width: 100%;
       max-height: 300px;
-      border-radius: 10px;
       margin-top: 5px;
-      display: block;
+      border-radius: 6px;
     }
-    .message-time {
-      font-size: 12px;
-      color: #9ea2a8;
-      margin-top: 5px;
-    }
-    .message-input {
-      padding: 15px;
-      background-color: #2f343d;
-      border-top: 1px solid #393f49;
-    }
-    .input-container {
+
+    footer {
+      background: #2f343d;
+      padding: 10px;
       display: flex;
       gap: 10px;
-      align-items: center;
     }
-    .message-input textarea {
+
+    textarea {
       flex: 1;
-      background-color: #393f49;
-      border: none;
-      border-radius: 18px;
-      padding: 12px 15px;
-      color: #fff;
       resize: none;
-      height: 44px;
-      max-height: 120px;
-    }
-    .send-button {
-      background-color: #1d74f5;
-      color: white;
       border: none;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border-radius: 6px;
+      padding: 10px;
+      background: #393f49;
+      color: white;
+    }
+
+    button {
+      background: #1d74f5;
+      border: none;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
       cursor: pointer;
     }
-    .send-button:hover {
-      background-color: #1666dd;
-    }
-    .attach-button {
-      background-color: #4eb980;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .user-count {
-      font-size: 14px;
-      color: #9ea2a8;
-    }
+
     input[type="file"] {
       display: none;
+    }
+
+    label[for="fileInput"] {
+      background: #4eb980;
+      border-radius: 6px;
+      padding: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Анонимный Чат</h1>
-    <div class="user-count">Онлайн: <span id="onlineCount">0</span></div>
+    <div>Онлайн: <span id="onlineCount">0</span></div>
   </header>
 
-  <div class="chat-container">
-    <div class="sidebar">
-      <div class="channel active">#общий</div>
-      <div class="channel">#помощь</div>
-    </div>
-    <div class="chat-area">
-      <div class="messages" id="messages">
-        <div class="message">
-          <div style="color: #1d74f5">Система</div>
-          <div class="message-content">Добро пожаловать в анонимный чат!</div>
-          <div class="message-time">Только что</div>
-        </div>
-      </div>
-      <div class="message-input">
-        <div class="input-container">
-          <button class="attach-button" id="attachButton">+</button>
-          <input type="file" id="fileInput" accept="image/*,video/*">
-          <textarea id="messageInput" placeholder="Напишите сообщение..." rows="1"></textarea>
-          <button class="send-button" id="sendButton">→</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <main id="messages"></main>
+
+  <footer>
+    <label for="fileInput">📎</label>
+    <input type="file" id="fileInput" accept="image/*,video/*" />
+    <textarea id="messageInput" rows="1" placeholder="Сообщение..."></textarea>
+    <button id="sendBtn">➤</button>
+  </footer>
+
   <script type="module">
-  // Firebase инициализация
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-  import { getDatabase, ref, push, onChildAdded, serverTimestamp, set } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
-  import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, serverTimestamp, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyC...ТВОЙ_КЛЮЧ",
-    authDomain: "bogdanio-9eae8.firebaseapp.com",
-    databaseURL: "https://bogdanio-9eae8-default-rtdb.firebaseio.com",
-    projectId: "bogdanio-9eae8",
-    storageBucket: "bogdanio-9eae8.appspot.com",
-    messagingSenderId: "xxx",
-    appId: "xxx"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEHxU460R8ruhV6RdzOoRcFUD0oQMtLo0",
+      authDomain: "bogdanio-9eae8.firebaseapp.com",
+      databaseURL: "https://bogdanio-9eae8-default-rtdb.firebaseio.com",
+      projectId: "bogdanio-9eae8",
+      storageBucket: "bogdanio-9eae8.appspot.com",
+      messagingSenderId: "840884163092",
+      appId: "1:840884163092:web:20b208ee19f506b25e4d01"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const storage = getStorage(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
 
-  const messagesRef = ref(db, "messages");
+    const messagesRef = ref(db, "messages");
+    const onlineRef = ref(db, "online");
 
-  const messageInput = document.getElementById("messageInput");
-  const sendButton = document.getElementById("sendButton");
-  const messagesContainer = document.getElementById("messages");
-  const attachButton = document.getElementById("attachButton");
-  const fileInput = document.getElementById("fileInput");
-  const onlineCountEl = document.getElementById("onlineCount");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const messages = document.getElementById("messages");
+    const fileInput = document.getElementById("fileInput");
+    const onlineCount = document.getElementById("onlineCount");
 
-  function addMessageToUI(msg) {
-    const div = document.createElement("div");
-    div.className = "message";
+    const userId = "user_" + Math.random().toString(36).substring(2, 8);
+    const presenceRef = ref(db, "online/" + userId);
+    set(presenceRef, true);
+    window.addEventListener("beforeunload", () => remove(presenceRef));
 
-    const content = document.createElement("div");
-    content.className = "message-content";
-    content.textContent = msg.text || "";
-
-    div.appendChild(content);
-
-    if (msg.mediaUrl) {
-      const media = document.createElement(
-        msg.mediaType.startsWith("image/") ? "img" : "video"
-      );
-      media.src = msg.mediaUrl;
-      media.className = "message-media";
-      if (msg.mediaType.startsWith("video/")) media.controls = true;
-      div.appendChild(media);
-    }
-
-    const time = document.createElement("div");
-    time.className = "message-time";
-    time.textContent = new Date(msg.timestamp).toLocaleTimeString();
-    div.appendChild(time);
-
-    messagesContainer.appendChild(div);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  }
-
-  onChildAdded(messagesRef, (data) => {
-    addMessageToUI(data.val());
-  });
-
-  async function sendMessage(text = "", file = null) {
-    let mediaUrl = "";
-    let mediaType = "";
-
-    if (file) {
-      const fileRef = sRef(storage, "media/" + Date.now() + "_" + file.name);
-      await uploadBytes(fileRef, file);
-      mediaUrl = await getDownloadURL(fileRef);
-      mediaType = file.type;
-    }
-
-    await push(messagesRef, {
-      text,
-      mediaUrl,
-      mediaType,
-      timestamp: Date.now()
+    onValue(onlineRef, snap => {
+      onlineCount.textContent = snap.exists() ? Object.keys(snap.val()).length : 0;
     });
 
-    messageInput.value = "";
-  }
-
-  sendButton.onclick = () => {
-    if (messageInput.value.trim()) {
-      sendMessage(messageInput.value.trim());
-    }
-  };
-
-  messageInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (messageInput.value.trim()) {
-        sendMessage(messageInput.value.trim());
+    onChildAdded(messagesRef, snap => {
+      const data = snap.val();
+      const div = document.createElement("div");
+      div.className = "message";
+      if (data.text) div.innerHTML += `<div>${data.text}</div>`;
+      if (data.mediaUrl && data.mediaType) {
+        if (data.mediaType.startsWith("image")) {
+          div.innerHTML += `<img src="${data.mediaUrl}" class="message-media" />`;
+        } else if (data.mediaType.startsWith("video")) {
+          div.innerHTML += `<video src="${data.mediaUrl}" class="message-media" controls></video>`;
+        }
       }
+      div.innerHTML += `<div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>`;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    });
+
+    async function sendMessage(text = "", file = null) {
+      let mediaUrl = "", mediaType = "";
+
+      if (file) {
+        const fileRef = sRef(storage, `media/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        mediaUrl = await getDownloadURL(fileRef);
+        mediaType = file.type;
+      }
+
+      await push(messagesRef, {
+        user: userId,
+        text,
+        mediaUrl,
+        mediaType,
+        timestamp: Date.now()
+      });
+
+      messageInput.value = "";
     }
-  });
 
-  attachButton.onclick = () => {
-    fileInput.click();
-  };
+    sendBtn.onclick = () => {
+      const text = messageInput.value.trim();
+      if (text) sendMessage(text);
+    };
 
-  fileInput.onchange = () => {
-    const file = fileInput.files[0];
-    if (file) {
-      sendMessage("", file);
-    }
-  };
+    fileInput.onchange = () => {
+      const file = fileInput.files[0];
+      if (file) sendMessage("", file);
+    };
 
-  // Онлайн статус
-  const userId = "user_" + Math.random().toString(36).substring(2, 10);
-  const userRef = ref(db, "online/" + userId);
-  set(userRef, true);
-  window.addEventListener("beforeunload", () => set(userRef, null));
-
-  import { onValue, ref as r } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
-  const onlineRef = r(db, "online");
-  onValue(onlineRef, (snapshot) => {
-    const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
-    onlineCountEl.textContent = count;
-  });
-</script>
+    messageInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        if (text) sendMessage(text);
+      }
+    });
+  </script>
 </body>
 </html>
